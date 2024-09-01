@@ -1,7 +1,7 @@
 
 # PDF Renamer Script
 
-This script renames PDF files based on their content by generating creative titles using the OpenAI API. The script can extract text snippets from PDFs, send these snippets to the OpenAI API to create a relevant and creative title, and rename the PDF files accordingly.
+This script created with ChatGPT renames PDF files based on their content by generating creative titles using the OpenAI API. The script can extract text snippets from PDFs, send these snippets to the OpenAI API to create a relevant and creative title, and rename the PDF files accordingly.
 Prerequisites
 
 Before using the script, make sure you have the following installed:
@@ -27,13 +27,6 @@ pip install openai nltk pdfminer.six PyMuPDF
 {
     "openai_api_key": "your_openai_api_key_here"
 }
-```
-Download NLTK Data: Make sure you have the necessary NLTK data files by running the following in your Python environment:
-
-```python
-
-    import nltk
-    nltk.download('punkt')
 ```
 # Usage
 
