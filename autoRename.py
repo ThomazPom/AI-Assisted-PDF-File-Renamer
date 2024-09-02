@@ -2,6 +2,7 @@ import os
 import argparse
 import glob
 import json
+import time
 from openai import OpenAI
 import logging
 from nltk.tokenize import sent_tokenize
@@ -118,12 +119,14 @@ def rename_pdf(file_path, new_title, dry_mode):
         logging.info(f"File {original_filename} renamed to {new_filename}")
 
 
-def process_pdfs(file_pattern, num_sentences, num_words, system_prompt, additional_prompt, max_tokens, dry_mode):
+def process_pdfs(file_pattern, num_sentences, num_words, system_prompt, additional_prompt, max_tokens, dry_mode,sleep):
     """
     Processes all PDF files matching the specified file pattern.
     """
     for file_path in glob.glob(file_pattern):
+        time.sleep(sleep)  # Sleep for 3 second to avoid rate limiting
         if file_path.endswith(".pdf"):
+            time.sleep()  # Sleep for 3 second to avoid rate limiting
             logging.info(f"Processing file: {file_path}")
             if num_words:
                 snippet = extract_text_snippet(file_path, num_sentences=None, num_words=num_words)
@@ -161,7 +164,9 @@ if __name__ == "__main__":
     parser.add_argument("--dry_mode", action="store_true",
                         help="If set, the script will not actually rename files but will log what it would do")
 
+    parser.add_argument("--sleep", type=int, default=3,help="Time to sleep between each file to avoid rate limiting")
+
     args = parser.parse_args()
 
     process_pdfs(args.file_pattern, args.num_sentences, args.num_words, args.system_prompt, args.additional_prompt,
-                 args.max_tokens, args.dry_mode)
+                 args.max_tokens, args.dry_mode,args.sleep)
