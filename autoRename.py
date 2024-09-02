@@ -125,7 +125,6 @@ def process_pdfs(file_pattern, num_sentences, num_words, system_prompt, addition
     """
     for file_path in glob.glob(file_pattern):
         if file_path.endswith(".pdf"):
-            time.sleep(sleep)  # Sleep for 3 second to avoid rate limiting
             logging.info(f"Processing file: {file_path}")
             if num_words:
                 snippet = extract_text_snippet(file_path, num_sentences=None, num_words=num_words)
@@ -135,9 +134,11 @@ def process_pdfs(file_pattern, num_sentences, num_words, system_prompt, addition
             if snippet:
                 creative_title = generate_creative_title(snippet, system_prompt, additional_prompt, max_tokens)
                 rename_pdf(file_path, creative_title, dry_mode)
+
             else:
                 logging.warning(f"Skipping file {file_path} due to extraction errors.")
 
+            time.sleep(sleep)  # Sleep for 3 second to avoid rate limiting
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Renames PDF files based on their content.")
