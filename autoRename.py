@@ -124,9 +124,8 @@ def process_pdfs(file_pattern, num_sentences, num_words, system_prompt, addition
     Processes all PDF files matching the specified file pattern.
     """
     for file_path in glob.glob(file_pattern):
-        time.sleep(sleep)  # Sleep for 3 second to avoid rate limiting
         if file_path.endswith(".pdf"):
-            time.sleep()  # Sleep for 3 second to avoid rate limiting
+            time.sleep(sleep)  # Sleep for 3 second to avoid rate limiting
             logging.info(f"Processing file: {file_path}")
             if num_words:
                 snippet = extract_text_snippet(file_path, num_sentences=None, num_words=num_words)
