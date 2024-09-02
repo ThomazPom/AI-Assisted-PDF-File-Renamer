@@ -1,4 +1,4 @@
-../autoRenamePDFOpenAI/.secret
+.secret
 config.yaml
 results.txt
 output_directory/
