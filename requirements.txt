@@ -1,0 +1,4 @@
+openai
+nltk
+pdfminer.six
+PyMuPDF
