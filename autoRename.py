@@ -10,6 +10,7 @@ from pdfminer.high_level import extract_text
 from pdfminer.layout import LAParams
 import fitz  # PyMuPDF
 import re
+from tqdm import tqdm as tdqm
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -64,7 +65,7 @@ def extract_with_pymupdf(file_path, num_sentences, num_words):
     return snippets
 
 
-def generate_creative_title(content, system_prompt, additional_prompt, max_tokens):
+def generate_creative_title(content, system_prompt, additional_prompt, max_tokens, model="gpt-4o-mini"):
     """
     Uses OpenAI to generate a creative title based on the extracted content.
     """
@@ -75,11 +76,11 @@ def generate_creative_title(content, system_prompt, additional_prompt, max_token
     user_content = f"Extracted content:\n{content}"
 
     # Log the system prompt and user content before sending to OpenAI
-    logging.info(f"System prompt: {full_system_prompt}")
-    logging.info(f"User content being sent to OpenAI: {user_content}")
+    logging.debug(f"System prompt: {full_system_prompt}")
+    logging.debug(f"User content being sent to OpenAI: {user_content}")
 
     response = client.chat.completions.create(
-        model="gpt-4",  # Use the GPT-4 model
+        model=model,
         messages=[
             {"role": "system", "content": full_system_prompt},
             {"role": "user", "content": user_content}
@@ -95,10 +96,10 @@ def sanitize_filename(filename):
     Remove or replace characters that are not allowed in Windows file names.
     """
 
-    invalid_chars = '<>:"/\\|?*-'
+    invalid_chars = '<>:"/\\|?*-\n'
     for char in invalid_chars:
         filename = filename.replace(char, ' - ')
-    filename=filename.strip(" -._")
+    filename = filename.strip(" -._")
     return filename.replace('  ', ' ').replace('  ', ' ').replace('  ', ' ')
 
 
@@ -115,15 +116,46 @@ def rename_pdf(file_path, new_title, dry_mode):
     if dry_mode:
         logging.info(f"[DRY MODE] Would rename file {original_filename} to {new_filename}")
     else:
-        os.rename(file_path, new_file_path)
-        logging.info(f"File {original_filename} renamed to {new_filename}")
+        try:
+            os.rename(file_path, new_file_path)
+            logging.info(f"File @ {original_filename} renamed to  \n ####{" " * 10} {new_filename}")
+        except FileExistsError as e:
+            logging.error(f"Failed to rename file {original_filename} to {new_filename}: {e}")
+
+            while True:
+                todo = input(
+                    "Enter 'r' to rename, 's' to skip, 'q' to quit, 'o' to open both files, d to delete current file, e to erase the existent file: ")
+                if todo == "r":
+                    new_filename = input("Enter new name: ")
+                    new_file_path = os.path.join(directory, new_filename)
+                    os.rename(file_path, new_file_path)
+                    logging.info(f"File @ {original_filename} renamed to  \n ####{" " * 10} {new_filename}")
+                    break
+                elif todo == "s":
+                    break
+                elif todo == "e":
+                    # erase the file
+                    os.remove(new_file_path)
+                    os.rename(file_path, new_file_path)
+                    break
+                elif todo == "d":
+                    # delete the  file
+                    os.remove(file_path)
+                    break
+                elif todo == "q":
+                    exit()
+                elif todo == "o":
+                    # open both file with default application
+                    os.startfile(new_file_path)
+                    os.startfile(file_path)
 
 
-def process_pdfs(file_pattern, num_sentences, num_words, system_prompt, additional_prompt, max_tokens, dry_mode,sleep):
+def process_pdfs(file_pattern, num_sentences, num_words, system_prompt, additional_prompt, max_tokens, dry_mode, sleep,
+                 model):
     """
     Processes all PDF files matching the specified file pattern.
     """
-    for file_path in glob.glob(file_pattern):
+    for file_path in tdqm(glob.glob(file_pattern), "PDFs processing"):
         if file_path.endswith(".pdf"):
             logging.info(f"Processing file: {file_path}")
             if num_words:
@@ -132,13 +164,14 @@ def process_pdfs(file_pattern, num_sentences, num_words, system_prompt, addition
                 snippet = extract_text_snippet(file_path, num_sentences=num_sentences)
 
             if snippet:
-                creative_title = generate_creative_title(snippet, system_prompt, additional_prompt, max_tokens)
+                creative_title = generate_creative_title(snippet, system_prompt, additional_prompt, max_tokens, model)
                 rename_pdf(file_path, creative_title, dry_mode)
 
             else:
                 logging.warning(f"Skipping file {file_path} due to extraction errors.")
 
             time.sleep(sleep)  # Sleep for 3 second to avoid rate limiting
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Renames PDF files based on their content.")
@@ -164,9 +197,10 @@ if __name__ == "__main__":
     parser.add_argument("--dry_mode", action="store_true",
                         help="If set, the script will not actually rename files but will log what it would do")
 
-    parser.add_argument("--sleep", type=int, default=3,help="Time to sleep between each file to avoid rate limiting")
+    parser.add_argument("--sleep", type=int, default=3, help="Time to sleep between each file to avoid rate limiting")
 
+    parser.add_argument("--model", type=str, default="gpt-4o-mini", help="OpenAI model to use")
     args = parser.parse_args()
 
     process_pdfs(args.file_pattern, args.num_sentences, args.num_words, args.system_prompt, args.additional_prompt,
-                 args.max_tokens, args.dry_mode,args.sleep)
+                 args.max_tokens, args.dry_mode, args.sleep, args.model)

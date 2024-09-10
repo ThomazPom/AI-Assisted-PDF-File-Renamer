@@ -1,4 +1,7 @@
-openai
-nltk
+openai~=1.43.0
+nltk~=3.9.1
 pdfminer.six
 PyMuPDF
+tdqm
+pdfminer~=20191125
+tqdm~=4.66.5
